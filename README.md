@@ -186,25 +186,4 @@ O desinstalador pede confirmação antes de remover tudo.
 
 ---
 
-## 🤝 Contribuindo
-
-1. Fork no GitHub  
-2. Crie uma branch de feature  
-3. Commit suas mudanças  
-4. Abra um Pull Request descrevendo a motivação  
-
----
-
-## 📜 Licença
-
-GPL License — veja arquivo `LICENSE` no repositório.
-
----
-
-## 📞 Suporte
-
-Abra uma Issue no repositório para reportar bugs ou solicitar melhorias.
-
----
-
 Feito com ❤️ por KAIKOAUGUSTIN
