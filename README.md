@@ -29,7 +29,6 @@ A lightweight Python daemon that keeps your Cloudflare DNS records in sync with 
 ## Features
 
 - Automatic public IP detection and DNS record syncing
-- Telegram notifications on IP changes
 - Optional `cloudflared` health check per record before updating
 - Dynamic config reload — changes to `config.yaml` take effect on the next cycle without a restart
 - Structured logging with configurable log level
@@ -44,7 +43,6 @@ A lightweight Python daemon that keeps your Cloudflare DNS records in sync with 
 - Python 3.6+
 - `sudo` access for installation and service management
 - Cloudflare API token with `Zone:Read` and `DNS:Edit` permissions
-- _(Optional)_ A Telegram bot for IP change notifications
 
 ---
 
@@ -95,13 +93,9 @@ settings:
   log_file: "/var/log/ddns_updater.log"
 
 cloudflare:
+  email: "youremail@example.com"
   api_token: "YOUR_API_TOKEN"
   zone_id: "YOUR_ZONE_ID"
-
-telegram:
-  enabled: true
-  bot_token: "YOUR_BOT_TOKEN"
-  chat_id: "YOUR_CHAT_ID"
 
 dns_records:
   - name: "home.example.com"
@@ -119,35 +113,28 @@ dns_records:
 
 #### `settings`
 
-| Key               | Type   | Description                                                      |
-|-------------------|--------|------------------------------------------------------------------|
-| `update_interval` | int    | Seconds between update cycles. Default: `300`                    |
-| `log_level`       | string | Logging verbosity. One of `DEBUG`, `INFO`, `WARNING`, `ERROR`    |
-| `log_file`        | string | Path to the log file                                             |
+| Key              | Type   | Description                                                        |
+|------------------|--------|--------------------------------------------------------------------|
+| `update_interval`| int    | Seconds between update cycles. Default: `300`                      |
+| `log_level`      | string | Logging verbosity. One of `DEBUG`, `INFO`, `WARNING`, `ERROR`      |
+| `log_file`       | string | Path to the log file                                               |
 
 #### `cloudflare`
 
-| Key         | Description                                                              |
-|-------------|--------------------------------------------------------------------------|
-| `api_token` | Cloudflare API token with `Zone:Read` and `DNS:Edit` permissions         |
-| `zone_id`   | The zone ID for your domain                                              |
-
-#### `telegram`
-
-| Key         | Type   | Description                                          |
-|-------------|--------|------------------------------------------------------|
-| `enabled`   | bool   | Enable or disable Telegram notifications             |
-| `bot_token` | string | Token from [@BotFather](https://t.me/BotFather)      |
-| `chat_id`   | string | Target chat or user ID                               |
+| Key         | Description                                                                    |
+|-------------|--------------------------------------------------------------------------------|
+| `email`     | Email associated with your Cloudflare account                                  |
+| `api_token` | Cloudflare API token with `Zone:Read` and `DNS:Edit` permissions               |
+| `zone_id`   | The zone ID for your domain                                                    |
 
 #### `dns_records`
 
-| Key               | Type   | Description                                                                                                              |
-|-------------------|--------|--------------------------------------------------------------------------------------------------------------------------|
-| `name`            | string | Fully qualified domain name to update                                                                                    |
-| `type`            | string | DNS record type (e.g. `A`)                                                                                               |
-| `proxied`         | bool   | Whether to proxy traffic through Cloudflare                                                                              |
-| `use_cloudflared` | bool   | If `true`, checks that `cloudflared` is active via `systemctl is-active` before updating this record                    |
+| Key              | Type   | Description                                                                                                    |
+|------------------|--------|----------------------------------------------------------------------------------------------------------------|
+| `name`           | string | Fully qualified domain name to update                                                                          |
+| `type`           | string | DNS record type (e.g. `A`)                                                                                     |
+| `proxied`        | bool   | Whether to proxy traffic through Cloudflare                                                                    |
+| `use_cloudflared`| bool   | If `true`, checks that `cloudflared` is active via `systemctl is-active` before updating this record           |
 
 ---
 
