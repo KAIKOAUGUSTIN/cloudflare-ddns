@@ -39,8 +39,8 @@ def setup_logging(log_file, level):
 def get_public_ip():
     try:
         return requests.get('https://api.ipify.org', timeout=5).text.strip()
-    except Exception as e:
-        logging.error(f"Failed to get public IP: {e}")
+    except Exception:
+        logging.exception("Failed to get public IP")
         return None
 
 
@@ -65,8 +65,8 @@ def send_telegram_message(token, chat_id, message):
     }
     try:
         requests.post(url, json=payload, timeout=5)
-    except Exception as e:
-        logging.error(f"Failed to send Telegram message: {e}")
+    except Exception:
+        logging.exception("Failed to send Telegram message")
 
 
 def get_dns_records(zone_id, headers, record_name, record_type):
@@ -76,8 +76,8 @@ def get_dns_records(zone_id, headers, record_name, record_type):
         response = requests.get(url, headers=headers, params=params, timeout=5)
         response.raise_for_status()
         return response.json().get('result', [])
-    except Exception as e:
-        logging.error(f"Failed to fetch DNS records: {e}")
+    except Exception:
+        logging.exception("Failed to fetch DNS records")
         return []
 
 
@@ -92,8 +92,8 @@ def update_dns_record(zone_id, headers, record_id, name, r_type, content, proxie
     try:
         response = requests.put(url, headers=headers, json=data, timeout=5)
         return response.json().get('success', False)
-    except Exception as e:
-        logging.error(f"Failed to update DNS record: {e}")
+    except Exception:
+        logging.exception("Failed to update DNS record")
         return False
 
 
@@ -108,9 +108,40 @@ def create_dns_record(zone_id, headers, name, r_type, content, proxied):
     try:
         response = requests.post(url, headers=headers, json=data, timeout=5)
         return response.json().get('success', False)
-    except Exception as e:
-        logging.error(f"Failed to create DNS record: {e}")
+    except Exception:
+        logging.exception("Failed to create DNS record")
         return False
+
+
+def sync_record(zone_id, headers, record, current_ip):
+    name = record['name']
+    r_type = record['type']
+    proxied = record.get('proxied', False)
+
+    if record.get('use_cloudflared', False) and not check_cloudflared_status():
+        logging.warning("Skipping %s: cloudflared not active.", name)
+        return
+
+    existing_records = get_dns_records(zone_id, headers, name, r_type)
+    existing = existing_records[0] if existing_records else None
+
+    if existing and existing['content'] == current_ip:
+        logging.info("%s already points to %s.", name, current_ip)
+        return
+
+    if existing:
+        logging.info("Updating %s to %s", name, current_ip)
+        if update_dns_record(
+            zone_id, headers, existing['id'],
+            name, r_type, current_ip, proxied
+        ):
+            return
+
+    logging.info("Creating new record for %s", name)
+    create_dns_record(
+        zone_id, headers,
+        name, r_type, current_ip, proxied
+    )
 
 
 def run_cycle(config):
@@ -127,44 +158,10 @@ def run_cycle(config):
         logging.error("Could not determine public IP.")
         return
 
-    logging.info(f"Current Public IP: {current_ip}")
+    logging.info("Current Public IP: %s", current_ip)
 
     for record in config['dns_records']:
-        name = record['name']
-        r_type = record['type']
-        proxied = record.get('proxied', False)
-        use_cloudflared = record.get('use_cloudflared', False)
-
-        if use_cloudflared and not check_cloudflared_status():
-            logging.warning(f"Skipping {name}: cloudflared not active.")
-            continue
-
-        existing_records = get_dns_records(zone_id, headers, name, r_type)
-
-        match_found = False
-        updated = False
-
-        for rec in existing_records:
-            if rec['content'] == current_ip:
-                match_found = True
-                logging.info(f"{name} already points to {current_ip}.")
-                break
-            else:
-                logging.info(f"Updating {name} to {current_ip}")
-                success = update_dns_record(
-                    zone_id, headers, rec['id'],
-                    name, r_type, current_ip, proxied
-                )
-                if success:
-                    updated = True
-                break
-
-        if not match_found and not updated:
-            logging.info(f"Creating new record for {name}")
-            create_dns_record(
-                zone_id, headers,
-                name, r_type, current_ip, proxied
-            )
+        sync_record(zone_id, headers, record, current_ip)
 
 
 if __name__ == "__main__":
@@ -185,9 +182,9 @@ if __name__ == "__main__":
 
             run_cycle(config)
 
-            logging.info(f"Sleeping for {interval} seconds...")
+            logging.info("Sleeping for %s seconds...", interval)
             time.sleep(interval)
 
-        except Exception as e:
-            logging.exception(f"Fatal loop error: {e}")
+        except Exception:
+            logging.exception("Fatal loop error")
             time.sleep(10)

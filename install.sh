@@ -11,6 +11,9 @@ INSTALLER_DIR="$(pwd)"
 UNINSTALL_URL="https://raw.githubusercontent.com/KAIKOAUGUSTIN/dnscript/main/uninstall.sh"
 UNINSTALL_FILE="$INSTALLER_DIR/uninstall.sh"
 
+# Recusa qualquer redirecionamento para fora de HTTPS
+CURL_OPTS=(--proto '=https' --proto-redir '=https' -fsSL)
+
 echo "🚀 Instalando Cloudflare DDNS Updater (modo loop + restart automático)..."
 
 # Criar diretório
@@ -18,12 +21,12 @@ sudo mkdir -p $INSTALL_DIR
 
 # Baixar script principal
 echo "📥 Baixando ddns_updater.py..."
-sudo curl -fsSL https://raw.githubusercontent.com/KAIKOAUGUSTIN/dnscript/main/ddns_updater.py -o $INSTALL_DIR/ddns_updater.py
+sudo curl "${CURL_OPTS[@]}" https://raw.githubusercontent.com/KAIKOAUGUSTIN/dnscript/main/ddns_updater.py -o $INSTALL_DIR/ddns_updater.py
 
 # Baixar config se não existir
 if [[ ! -f "$INSTALL_DIR/config.yaml" ]]; then
     echo "📥 Baixando config.yaml..."
-    sudo curl -fsSL https://raw.githubusercontent.com/KAIKOAUGUSTIN/dnscript/main/config.yaml -o $INSTALL_DIR/config.yaml
+    sudo curl "${CURL_OPTS[@]}" https://raw.githubusercontent.com/KAIKOAUGUSTIN/dnscript/main/config.yaml -o $INSTALL_DIR/config.yaml
     echo "⚠️  Edite $INSTALL_DIR/config.yaml com suas credenciais."
 else
     echo "💾 config.yaml já existe. Preservando."
@@ -31,7 +34,7 @@ fi
 
 # Baixar uninstall.sh na pasta atual
 echo "📥 Baixando uninstall.sh em $INSTALLER_DIR..."
-curl -fsSL "$UNINSTALL_URL" -o "$UNINSTALL_FILE"
+curl "${CURL_OPTS[@]}" "$UNINSTALL_URL" -o "$UNINSTALL_FILE"
 chmod +x "$UNINSTALL_FILE"
 
 # Permissões
